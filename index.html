@@ -7,14 +7,13 @@
     <style>
         :root {
             --primary: #4cc9f0; --secondary: #f72585; --success: #4ade80;
-            --danger: #ff4d4d; --bg: #fdf0d5; --neutral: #ced4da;
+            --danger: #ff4d4d; --bg: #fdf0d5;
         }
         body { 
             margin: 0; background: var(--bg); font-family: 'Comic Sans MS', cursive, sans-serif; 
             display: flex; flex-direction: column; align-items: center; overflow-x: hidden;
-            user-select: none;
         }
-        #game-container { width: 100%; max-width: 650px; padding: 20px; text-align: center; position: relative; }
+        #game-container { width: 100%; max-width: 650px; padding: 20px; text-align: center; }
         .screen { display: none; animation: popIn 0.4s ease-out; }
         .active { display: block; }
         
@@ -26,12 +25,12 @@
         .btn:active { transform: translateY(4px); box-shadow: 0 2px #3a0ca3; }
         .btn-next { background: #ffbe0b !important; box-shadow: 0 6px #fb5607 !important; display: none; margin-top: 20px; width: 80%; }
         
-        .progress-bar { width: 100%; height: 20px; background: #ddd; border-radius: 10px; margin: 10px 0; border: 2px solid #fff; }
+        .progress-bar { width: 100%; height: 20px; background: #ddd; border-radius: 10px; margin: 10px 0; }
         #inner-progress { width: 0%; height: 100%; background: var(--success); border-radius: 8px; transition: 0.3s; }
         
         #feedback-banner { font-size: 2rem; font-weight: bold; margin: 10px 0; min-height: 2.5rem; }
-        .correct-text { color: var(--success); animation: pulse 0.5s; }
-        .wrong-text { color: var(--danger); animation: shake 0.5s; }
+        .correct-text { color: var(--success); }
+        .wrong-text { color: var(--danger); }
 
         .q-area { background: white; border-radius: 25px; padding: 15px; margin-bottom: 15px; box-shadow: 0 8px #e9ecef; }
         #camera-wrapper { 
@@ -48,75 +47,69 @@
         }
         #left-zone { left: 0; border-right: 5px solid var(--success); }
         #right-zone { right: 0; border-left: 5px solid var(--danger); }
-        .zone.selected-left { background: rgba(74, 222, 128, 0.8) !important; font-size: 1.6rem; }
-        .zone.selected-right { background: rgba(255, 77, 77, 0.8) !important; font-size: 1.6rem; }
+        .zone.selected-left { background: rgba(74, 222, 128, 0.8) !important; }
+        .zone.selected-right { background: rgba(255, 77, 77, 0.8) !important; }
         
         .tile-box { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0; }
         .tile { 
             background: white; border: 3px solid var(--primary); padding: 15px 25px; 
             border-radius: 15px; cursor: pointer; font-size: 1.6rem; font-weight: bold;
-            box-shadow: 0 5px var(--primary); transition: 0.1s;
+            box-shadow: 0 5px var(--primary);
         }
-        .tile.selected { opacity: 0.3; transform: translateY(4px); pointer-events: none; box-shadow: none; }
+        .tile.selected { opacity: 0.3; pointer-events: none; }
         
-        .emoji-large { font-size: 6rem; line-height: 1.2; }
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="stats" style="font-size: 1.5rem; font-weight: bold; color: var(--secondary); display: flex; justify-content: space-between; padding: 0 10px;">
+    <div id="stats" style="font-size: 1.5rem; font-weight: bold; color: var(--secondary); display: flex; justify-content: space-between;">
         <span>⭐ <span id="current-score">0</span></span>
-        <span>Quest <span id="q-count">1</span>/10</span>
+        <span>Question <span id="q-count">1</span>/10</span>
     </div>
     <div class="progress-bar"><div id="inner-progress"></div></div>
     <div id="feedback-banner"></div>
 
     <div id="screen-login" class="screen active">
         <h1 style="font-size: 3rem; color: var(--secondary);">English Hero! 👋</h1>
-        <input type="text" id="p-name" placeholder="Enter Name" style="padding: 15px; border-radius: 20px; width: 70%; border: 4px solid var(--primary); font-size: 1.5rem; text-align: center;">
-        <br><button class="btn" onclick="startLevel(1)" style="margin-top: 20px;">GO! 🚀</button>
+        <input type="text" id="p-name" placeholder="Enter name" style="padding: 15px; border-radius: 20px; width: 70%; border: 4px solid var(--primary); font-size: 1.5rem; text-align: center;">
+        <br><button class="btn" onclick="startLevel(1)" style="margin-top: 20px;">START 🚀</button>
     </div>
 
     <div id="screen-l1" class="screen">
-        <div class="q-area">
-            <div id="l1-emoji" class="emoji-large"></div>
-            <h2 id="l1-question" style="font-size: 2rem;">...</h2>
-        </div>
+        <div class="q-area"><div id="l1-emoji" style="font-size: 6rem;"></div><h2 id="l1-question" style="font-size: 1.8rem;">...</h2></div>
         <div id="camera-wrapper">
             <video id="video" autoplay playsinline></video>
             <div id="left-zone" class="zone">YES ✅<br>(Lean Right)</div>
             <div id="right-zone" class="zone">NO ❌<br>(Lean Left)</div>
         </div>
-        <button id="l1-check-btn" class="btn" style="background: var(--secondary); display: none; width: 80%;" onclick="processL1Selection()">LOCK ANSWER ✅</button>
-        <button id="l1-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
+        <button id="l1-check-btn" class="btn" style="display: none; width: 80%;" onclick="processL1Selection()">LOCK ANSWER ✅</button>
+        <button id="l1-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
     </div>
 
     <div id="screen-l2" class="screen">
-        <div class="q-area"><div id="l2-emoji" class="emoji-large"></div><div id="l2-display" style="font-size: 3rem; color: var(--secondary); font-weight: bold; min-height: 70px; letter-spacing: 5px;"></div></div>
+        <div class="q-area"><div id="l2-emoji" style="font-size: 6rem;"></div><div id="l2-display" style="font-size: 3rem; color: var(--secondary); font-weight: bold;"></div></div>
         <div id="l2-options" class="tile-box"></div>
         <button id="l2-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-l3" class="screen">
-        <div class="q-area"><div id="l3-emoji" class="emoji-large"></div><h3>Say:<br><span id="l3-target-text" style="color:var(--secondary); font-size: 2rem;">...</span></h3></div>
+        <div class="q-area"><div id="l3-emoji" style="font-size: 6rem;"></div><h3 id="l3-target-text" style="font-size: 2rem;">...</h3></div>
         <button id="mic-btn" class="btn" style="width:100px; height:100px; border-radius:50%; font-size:3rem;" onclick="startSpeech()">🎤</button>
         <button id="l3-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-l4" class="screen">
-        <div class="q-area"><div id="l4-emoji" class="emoji-large"></div><div id="l4-display" style="border-bottom: 5px dashed var(--primary); min-height: 60px; font-size: 1.8rem; display: flex; justify-content: center; align-items: center; gap: 10px; padding: 10px;"></div></div>
+        <div class="q-area"><div id="l4-emoji" style="font-size: 6rem;"></div><div id="l4-display" style="font-size: 1.8rem; padding: 10px;"></div></div>
         <div id="l4-options" class="tile-box"></div>
         <button id="l4-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-final" class="screen">
-        <h1>You Won! 🎉</h1>
-        <div id="final-stats" style="font-size: 2rem; background: white; padding: 30px; border-radius: 30px; border: 5px solid var(--success);"></div>
-        <button class="btn" onclick="location.reload()">REPLAY 🔄</button>
+        <h1>Finish! 🎉</h1>
+        <div id="final-stats" style="font-size: 2rem;"></div>
+        <button class="btn" onclick="location.reload()">PLAY AGAIN 🔄</button>
     </div>
 </div>
 
@@ -130,13 +123,6 @@
 
     let currentLevel = 1, questionIndex = 0, totalScore = 0, videoStream = null, tempChoice = null, isQuestionAnswered = false;
 
-    function showFeedback(isCorrect, text) {
-        const banner = document.getElementById('feedback-banner');
-        banner.innerText = text;
-        banner.className = isCorrect ? 'correct-text' : 'wrong-text';
-        if (isCorrect) createConfetti();
-    }
-
     function startLevel(lvl) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`screen-l${lvl}`).classList.add('active');
@@ -146,9 +132,14 @@
     }
 
     function nextQuestion() {
-        document.getElementById('feedback-banner').innerText = "";
+        // RESET EVERYTHING FOR NEXT QUESTION
         isQuestionAnswered = false;
+        tempChoice = null;
+        document.getElementById('feedback-banner').innerText = "";
         document.querySelectorAll('.btn-next').forEach(b => b.style.display = 'none');
+        document.getElementById('left-zone').className = 'zone';
+        document.getElementById('right-zone').className = 'zone';
+        
         questionIndex++;
         if (questionIndex >= 10) {
             if (currentLevel === 1) stopCamera();
@@ -156,49 +147,53 @@
             startLevel(currentLevel + 1);
             questionIndex = 0;
         }
+        
         document.getElementById('q-count').innerText = questionIndex + 1;
         document.getElementById('inner-progress').style.width = (questionIndex * 10) + "%";
         loadQuestion();
     }
 
-    // --- LEVEL 1: CAMERA (FIXED MIRROR) ---
+    // --- LEVEL 1 CORE ---
     async function initL1Camera() {
         try {
-            const v = document.getElementById('video');
             videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            v.srcObject = videoStream;
+            document.getElementById('video').srcObject = videoStream;
             detectMotion();
-        } catch(e) { alert("Camera Error!"); }
+        } catch(e) { alert("Camera error!"); }
     }
     function stopCamera() { if (videoStream) videoStream.getTracks().forEach(t => t.stop()); }
 
     function detectMotion() {
-        if (currentLevel !== 1 || isQuestionAnswered) return;
+        if (currentLevel !== 1) return;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 160; canvas.height = 120;
+        
         const loop = () => {
-            if (currentLevel !== 1 || isQuestionAnswered) return;
+            if (currentLevel !== 1 || isQuestionAnswered) {
+                requestAnimationFrame(loop);
+                return;
+            }
             ctx.drawImage(document.getElementById('video'), 0, 0, 160, 120);
             const frame = ctx.getImageData(0, 0, 160, 120);
-            let leftArea = 0, rightArea = 0;
+            let leftDark = 0, rightDark = 0;
             for (let i = 0; i < frame.data.length; i += 4) {
                 const x = (i / 4) % 160;
                 const brightness = (frame.data[i] + frame.data[i+1] + frame.data[i+2]) / 3;
-                if (brightness < 85) { 
-                    if (x < 45) leftArea++; 
-                    if (x > 115) rightArea++;
+                if (brightness < 80) { 
+                    if (x < 40) leftDark++; 
+                    if (x > 120) rightDark++;
                 }
             }
-            // Logic: In mirrored view, leaning your BODY RIGHT shows up on the LEFT of the canvas.
-            if (leftArea > 1200) { tempChoice = true; highlightZone('left'); } 
-            else if (rightArea > 1200) { tempChoice = false; highlightZone('right'); }
+            if (leftDark > 1200) { tempChoice = true; highlightZone('left'); } 
+            else if (rightDark > 1200) { tempChoice = false; highlightZone('right'); }
             requestAnimationFrame(loop);
         };
         loop();
     }
 
     function highlightZone(side) {
+        if (isQuestionAnswered) return;
         document.getElementById('left-zone').className = 'zone' + (side === 'left' ? ' selected-left' : '');
         document.getElementById('right-zone').className = 'zone' + (side === 'right' ? ' selected-right' : '');
         document.getElementById('l1-check-btn').style.display = 'inline-block';
@@ -207,83 +202,17 @@
     function processL1Selection() {
         isQuestionAnswered = true;
         const correct = document.getElementById('l1-question').dataset.ans === "true";
-        if (tempChoice === correct) { totalScore += 10; showFeedback(true, "YES! 🌟"); }
-        else showFeedback(false, "NOPE! 😮");
+        if (tempChoice === correct) {
+            totalScore += 10;
+            document.getElementById('feedback-banner').innerText = "YES! 🌟";
+            document.getElementById('feedback-banner').className = "correct-text";
+        } else {
+            document.getElementById('feedback-banner').innerText = "Oops! 😮";
+            document.getElementById('feedback-banner').className = "wrong-text";
+        }
         document.getElementById('current-score').innerText = totalScore;
         document.getElementById('l1-check-btn').style.display = 'none';
         document.getElementById('l1-next-btn').style.display = 'inline-block';
-    }
-
-    // --- LEVEL 2: SPELLING (FIXED RESET) ---
-    function initL2() {
-        const item = vocab[questionIndex];
-        document.getElementById('l2-emoji').innerText = item.e;
-        document.getElementById('l2-display').innerText = "";
-        const opt = document.getElementById('l2-options');
-        opt.innerHTML = "";
-        let guess = "";
-        const chars = item.w.split("").sort(() => Math.random() - 0.5);
-        chars.forEach(c => {
-            const t = document.createElement('div');
-            t.className = 'tile'; t.innerText = c.toUpperCase();
-            t.onclick = () => {
-                t.classList.add('selected'); guess += c.toLowerCase();
-                document.getElementById('l2-display').innerText = guess.toUpperCase();
-                if (guess.length === item.w.length) {
-                    if (guess === item.w.toLowerCase()) {
-                        totalScore += 10; showFeedback(true, "Perfect! 🏆");
-                        document.getElementById('l2-next-btn').style.display = 'inline-block';
-                    } else { 
-                        showFeedback(false, "Try Again!"); 
-                        setTimeout(initL2, 1000); 
-                    }
-                }
-            };
-            opt.appendChild(t);
-        });
-    }
-
-    // --- LEVEL 3: SPEECH ---
-    function startSpeech() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.lang = 'en-US'; rec.start();
-        document.getElementById('mic-btn').style.boxShadow = '0 0 20px red';
-        rec.onresult = (e) => {
-            const s = e.results[0][0].transcript.toLowerCase();
-            if (s.includes(vocab[questionIndex].w)) {
-                totalScore += 10; showFeedback(true, "Good! 🎤");
-                document.getElementById('l3-next-btn').style.display = 'inline-block';
-            } else showFeedback(false, "Try again!");
-            document.getElementById('mic-btn').style.boxShadow = '0 6px #3a0ca3';
-        };
-    }
-
-    // --- LEVEL 4: SENTENCE (FIXED RESET) ---
-    function initL4() {
-        const item = vocab[questionIndex];
-        const disp = document.getElementById('l4-display');
-        disp.innerText = ""; let currentArr = [];
-        const opt = document.getElementById('l4-options');
-        opt.innerHTML = "";
-        const words = ["It", "is", "a", item.w];
-        words.sort(() => Math.random() - 0.5).forEach(w => {
-            const t = document.createElement('div');
-            t.className = 'tile'; t.innerText = w;
-            t.onclick = () => {
-                t.classList.add('selected'); currentArr.push(w);
-                disp.innerText = currentArr.join(" ");
-                if (currentArr.length === 4) {
-                    if (currentArr.join(" ").toLowerCase() === `it is a ${item.w}`) {
-                        totalScore += 10; showFeedback(true, "Great! ✍️");
-                        document.getElementById('l4-next-btn').style.display = 'inline-block';
-                    } else { 
-                        showFeedback(false, "Order error!"); 
-                        setTimeout(initL4, 1000); 
-                    }
-                }
-            };
-            opt.appendChild(t);
-        });
     }
 
     function loadQuestion() {
@@ -291,29 +220,70 @@
         if (currentLevel === 1) {
             const match = Math.random() > 0.5;
             document.getElementById('l1-emoji').innerText = item.e;
-            document.getElementById('l1-question').innerText = `Is it a ${match ? item.w : vocab[(questionIndex+1)%10].w}?`;
+            document.getElementById('l1-question').innerText = `Is it a ${match ? item.w : vocab[(questionIndex + 1) % 10].w}?`;
             document.getElementById('l1-question').dataset.ans = match;
-        } else if (currentLevel === 2) initL2();
-        else if (currentLevel === 3) {
+            document.getElementById('l1-check-btn').style.display = 'none';
+        } else if (currentLevel === 2) {
+            initL2();
+        } else if (currentLevel === 3) {
             document.getElementById('l3-emoji').innerText = item.e;
-            document.getElementById('l3-target-text').innerText = `It is a ${item.w}.`;
-        } else if (currentLevel === 4) initL4();
+            document.getElementById('l3-target-text').innerText = `Say: It is a ${item.w}`;
+        } else if (currentLevel === 4) {
+            initL4();
+        }
+    }
+
+    // Level 2, 3, 4 mini-functions (kept basic for flow)
+    function initL2() {
+        const item = vocab[questionIndex];
+        document.getElementById('l2-emoji').innerText = item.e;
+        document.getElementById('l2-display').innerText = "";
+        const opt = document.getElementById('l2-options'); opt.innerHTML = "";
+        let guess = "";
+        item.w.split("").sort(() => Math.random()-0.5).forEach(c => {
+            const t = document.createElement('div'); t.className = 'tile'; t.innerText = c.toUpperCase();
+            t.onclick = () => {
+                t.classList.add('selected'); guess += c.toLowerCase();
+                document.getElementById('l2-display').innerText = guess.toUpperCase();
+                if (guess === item.w) {
+                    totalScore += 10; document.getElementById('l2-next-btn').style.display = 'inline-block';
+                } else if (guess.length === item.w.length) { setTimeout(initL2, 600); }
+            };
+            opt.appendChild(t);
+        });
+    }
+
+    function initL4() {
+        const item = vocab[questionIndex];
+        const disp = document.getElementById('l4-display'); disp.innerText = "";
+        const opt = document.getElementById('l4-options'); opt.innerHTML = "";
+        let arr = [];
+        ["It", "is", "a", item.w].sort(() => Math.random()-0.5).forEach(w => {
+            const t = document.createElement('div'); t.className = 'tile'; t.innerText = w;
+            t.onclick = () => {
+                t.classList.add('selected'); arr.push(w); disp.innerText = arr.join(" ");
+                if (arr.join(" ").toLowerCase() === `it is a ${item.w}`) {
+                    totalScore += 10; document.getElementById('l4-next-btn').style.display = 'inline-block';
+                } else if (arr.length === 4) { setTimeout(initL4, 600); }
+            };
+            opt.appendChild(t);
+        });
+    }
+
+    function startSpeech() {
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        rec.lang = 'en-US'; rec.start();
+        rec.onresult = (e) => {
+            if (e.results[0][0].transcript.toLowerCase().includes(vocab[questionIndex].w)) {
+                totalScore += 10; document.getElementById('l3-next-btn').style.display = 'inline-block';
+            }
+        };
     }
 
     function finishGame() {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-final').classList.add('active');
-        document.getElementById('final-stats').innerHTML = `Superstar: ${document.getElementById('p-name').value || 'Hero'}<br>Score: ${totalScore} ⭐`;
-    }
-
-    function createConfetti() {
-        for(let i=0; i<10; i++){
-            const c = document.createElement('div');
-            c.style.position = 'fixed'; c.style.left = Math.random()*100+'vw'; c.style.top = '-10px';
-            c.style.width = '10px'; c.style.height = '10px'; c.style.backgroundColor = 'gold';
-            document.body.appendChild(c);
-            c.animate([{transform:'translateY(0)'},{transform:'translateY(100vh) rotate(360deg)'}], 1500).onfinish = () => c.remove();
-        }
+        document.getElementById('final-stats').innerText = `Score: ${totalScore}`;
     }
 </script>
 </body>
