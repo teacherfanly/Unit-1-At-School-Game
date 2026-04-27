@@ -12,112 +12,123 @@
         body { 
             margin: 0; background: var(--bg); font-family: 'Comic Sans MS', cursive, sans-serif; 
             display: flex; flex-direction: column; align-items: center; overflow-x: hidden;
+            user-select: none;
         }
-        #game-container { width: 100%; max-width: 600px; padding: 20px; text-align: center; }
+        #game-container { width: 100%; max-width: 650px; padding: 20px; text-align: center; position: relative; }
         .screen { display: none; animation: popIn 0.4s ease-out; }
         .active { display: block; }
         
         /* UI Elements */
         .btn {
-            background: var(--primary); color: white; border: none; padding: 15px 30px;
-            border-radius: 50px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px #3a0ca3; margin: 10px; transition: 0.2s;
+            background: var(--primary); color: white; border: none; padding: 15px 35px;
+            border-radius: 50px; font-size: 1.4rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 6px #3a0ca3; margin: 10px; transition: 0.2s;
         }
-        .progress-bar { width: 100%; height: 15px; background: #ddd; border-radius: 10px; margin: 10px 0; }
-        #inner-progress { width: 0%; height: 100%; background: var(--success); border-radius: 10px; transition: 0.3s; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px #3a0ca3; }
+        .btn-next { background: #ffbe0b !important; box-shadow: 0 6px #fb5607 !important; display: none; margin-top: 20px; width: 80%; }
         
+        .progress-bar { width: 100%; height: 20px; background: #ddd; border-radius: 10px; margin: 10px 0; border: 2px solid #fff; }
+        #inner-progress { width: 0%; height: 100%; background: var(--success); border-radius: 8px; transition: 0.3s; }
+        
+        /* Feedback Message */
+        #feedback-banner { font-size: 2rem; font-weight: bold; margin: 10px 0; min-height: 2.5rem; transition: 0.3s; }
+        .correct-text { color: var(--success); transform: scale(1.1); }
+        .wrong-text { color: var(--danger); }
+
         /* Level 1 Camera Layout */
-        .q-area { background: white; border-radius: 20px; padding: 15px; margin-bottom: 15px; box-shadow: 0 5px #ccc; }
+        .q-area { background: white; border-radius: 25px; padding: 15px; margin-bottom: 15px; box-shadow: 0 8px #e9ecef; position: relative; }
         #camera-wrapper { 
-            position: relative; width: 400px; height: 300px; margin: 0 auto; 
-            border: 8px solid white; border-radius: 20px; overflow: hidden; 
+            position: relative; width: 480px; height: 320px; margin: 0 auto; 
+            border: 10px solid white; border-radius: 30px; overflow: hidden; background: #000;
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         
-        .zone { position: absolute; top: 0; width: 30%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; color: white; transition: 0.3s; }
-        #left-zone { left: 0; background: rgba(74, 222, 128, 0.4); border-right: 4px solid var(--success); }
-        #right-zone { right: 0; background: rgba(255, 77, 77, 0.4); border-left: 4px solid var(--danger); }
-        .zone.active-choice { background: rgba(255, 255, 255, 0.8) !important; color: black; transform: scale(1.05); }
-        
-        .wait-timer { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 5px 15px; border-radius: 20px; display: none; }
-
-        /* Level 2 & 4 Tiles */
-        .tile-box { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 20px 0; }
-        .tile { 
-            background: white; border: 3px solid var(--primary); padding: 12px 22px; 
-            border-radius: 15px; cursor: pointer; font-size: 1.5rem; font-weight: bold;
-            box-shadow: 0 4px #4cc9f0;
+        .zone { 
+            position: absolute; top: 0; width: 25%; height: 100%; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            font-size: 1.1rem; font-weight: bold; color: white; transition: 0.3s;
+            background: rgba(0,0,0,0.2);
         }
-        .tile.selected { background: #eee; color: #ccc; box-shadow: none; pointer-events: none; }
+        #left-zone { left: 0; border-right: 5px solid var(--success); }
+        #right-zone { right: 0; border-left: 5px solid var(--danger); }
+        .zone.selected-left { background: rgba(74, 222, 128, 0.7) !important; font-size: 1.5rem; }
+        .zone.selected-right { background: rgba(255, 77, 77, 0.7) !important; font-size: 1.5rem; }
         
-        .emoji-large { font-size: 6rem; margin: 5px; }
+        /* Game Tiles */
+        .tile-box { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0; }
+        .tile { 
+            background: white; border: 3px solid var(--primary); padding: 15px 25px; 
+            border-radius: 15px; cursor: pointer; font-size: 1.6rem; font-weight: bold;
+            box-shadow: 0 5px var(--primary);
+        }
+        .tile.selected { background: #dee2e6; color: #adb5bd; box-shadow: none; transform: translateY(4px); pointer-events: none; }
+        
+        .emoji-large { font-size: 7rem; line-height: 1; }
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="stats" style="font-size: 1.3rem; font-weight: bold; color: var(--secondary);">
-        ⭐ Score: <span id="current-score">0</span> | Q: <span id="q-count">1</span>/10
+    <div id="stats" style="font-size: 1.5rem; font-weight: bold; color: var(--secondary); display: flex; justify-content: space-between; padding: 0 10px;">
+        <span>⭐ <span id="current-score">0</span></span>
+        <span>Question <span id="q-count">1</span>/10</span>
     </div>
     <div class="progress-bar"><div id="inner-progress"></div></div>
+    <div id="feedback-banner"></div>
 
     <div id="screen-login" class="screen active">
-        <h1>School Adventure! 🎒</h1>
-        <p>Hello! What is your name?</p>
-        <input type="text" id="p-name" placeholder="Type name here..." style="padding: 15px; border-radius: 20px; width: 80%; border: 3px solid var(--primary); font-size: 1.2rem;">
-        <br><button class="btn" onclick="startLevel(1)">START GAME 🚀</button>
+        <h1 style="font-size: 3rem; color: var(--secondary);">English Hero! 👋</h1>
+        <input type="text" id="p-name" placeholder="Enter your name" style="padding: 20px; border-radius: 25px; width: 80%; border: 4px solid var(--primary); font-size: 1.5rem; text-align: center;">
+        <br><button class="btn" onclick="startLevel(1)" style="margin-top: 30px;">START 🚀</button>
     </div>
 
     <div id="screen-l1" class="screen">
         <div class="q-area">
             <div id="l1-emoji" class="emoji-large"></div>
-            <h2 id="l1-question">...</h2>
+            <h2 id="l1-question" style="font-size: 2rem; margin: 10px 0;">...</h2>
         </div>
-        
         <div id="camera-wrapper">
             <video id="video" autoplay playsinline></video>
-            <div id="left-zone" class="zone">Yes, it is.</div>
-            <div id="right-zone" class="zone">No, it isn't.</div>
-            <div id="wait-timer" class="wait-timer">Hold it...</div>
+            <div id="left-zone" class="zone">Yes, it is. ✅</div>
+            <div id="right-zone" class="zone">No, it isn't. ❌</div>
         </div>
-        <p>Stand in the middle! Lean Left or Right to answer.</p>
+        <button id="l1-check-btn" class="btn" style="background: var(--secondary); display: none;" onclick="processL1Selection()">CHECK ANSWER ✅</button>
+        <button id="l1-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
     </div>
 
     <div id="screen-l2" class="screen">
-        <div class="q-area">
-            <div id="l2-emoji" class="emoji-large"></div>
-            <div id="l2-display" style="font-size: 2.5rem; letter-spacing: 10px; color: var(--secondary); font-weight: bold;"></div>
-        </div>
+        <div class="q-area"><div id="l2-emoji" class="emoji-large"></div><div id="l2-display" style="font-size: 3rem; letter-spacing: 10px; color: var(--secondary); font-weight: bold; min-height: 60px;"></div></div>
         <div id="l2-options" class="tile-box"></div>
-        <button class="btn" style="background:var(--danger)" onclick="resetL2()">Try Again 🔄</button>
+        <button id="l2-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
     </div>
 
     <div id="screen-l3" class="screen">
         <div class="q-area">
             <div id="l3-emoji" class="emoji-large"></div>
-            <h3>Say: <span id="l3-target-text" style="color:var(--secondary)">It is a bag.</span></h3>
+            <h3 style="font-size: 1.8rem;">Say: <br><span id="l3-target-text" style="color:var(--secondary); font-size: 2.2rem;">It is a bag.</span></h3>
         </div>
-        <button id="mic-btn" class="btn" style="width:120px; height:120px; border-radius:50%; font-size:3rem;" onclick="startSpeech()">🎤</button>
-        <p id="speech-feedback">Click the mic and speak clearly!</p>
+        <button id="mic-btn" class="btn" style="width:120px; height:120px; border-radius:50%; font-size:3.5rem;" onclick="startSpeech()">🎤</button>
+        <button id="l3-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
     </div>
 
     <div id="screen-l4" class="screen">
         <div class="q-area">
             <div id="l4-emoji" class="emoji-large"></div>
-            <div id="l4-display" style="border-bottom: 4px dashed var(--primary); min-height: 70px; font-size: 1.8rem; display: flex; justify-content: center; align-items: center; gap: 10px;"></div>
+            <div id="l4-display" style="border-bottom: 5px dashed var(--primary); min-height: 80px; font-size: 1.8rem; display: flex; justify-content: center; align-items: center; gap: 10px;"></div>
         </div>
         <div id="l4-options" class="tile-box"></div>
-        <div style="display:flex; justify-content: center;">
-            <button class="btn" style="background:var(--success)" onclick="checkL4()">Check ✅</button>
-            <button class="btn" style="background:var(--danger)" onclick="resetL4()">Clear ❌</button>
+        <div id="l4-controls">
+            <button id="l4-check-btn" class="btn" style="background:var(--success)" onclick="checkL4()">CHECK ✅</button>
+            <button id="l4-reset-btn" class="btn" style="background:var(--danger)" onclick="resetL4()">RESET ❌</button>
         </div>
+        <button id="l4-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT QUESTION ➡️</button>
     </div>
 
     <div id="screen-final" class="screen">
-        <h1>Hooray! Finished! 🏆</h1>
-        <div id="final-stats" style="font-size: 1.8rem; background: white; padding: 30px; border-radius: 30px; border: 5px solid var(--primary);"></div>
-        <button class="btn" onclick="location.reload()">Play Again 🔄</button>
+        <h1 style="font-size: 3rem;">Finish! 🎉</h1>
+        <div id="final-stats" style="font-size: 1.8rem; background: white; padding: 30px; border-radius: 40px; border: 8px solid var(--success);"></div>
+        <button class="btn" onclick="location.reload()">PLAY AGAIN 🔄</button>
     </div>
 </div>
 
@@ -133,135 +144,138 @@
     let questionIndex = 0;
     let totalScore = 0;
     let videoStream = null;
-    let stabilityCounter = 0;
-    let currentDetection = null;
+    let tempChoice = null;
+    let isQuestionAnswered = false;
 
-    // --- CAMERA STOPPER ---
-    function stopCamera() {
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-            videoStream = null;
+    // --- UTILS ---
+    function showFeedback(isCorrect, text) {
+        const banner = document.getElementById('feedback-banner');
+        banner.innerText = text;
+        banner.className = isCorrect ? 'correct-text' : 'wrong-text';
+        if (isCorrect) createConfetti();
+    }
+
+    function clearFeedback() {
+        document.getElementById('feedback-banner').innerText = "";
+        document.getElementById('feedback-banner').className = "";
+    }
+
+    // --- ENGINE ---
+    function nextQuestion() {
+        clearFeedback();
+        isQuestionAnswered = false;
+        document.querySelectorAll('.btn-next').forEach(b => b.style.display = 'none');
+        
+        questionIndex++;
+        if (questionIndex >= 10) {
+            if (currentLevel === 1) stopCamera();
+            currentLevel++;
+            questionIndex = 0;
+            if (currentLevel > 4) return finishGame();
+            startLevel(currentLevel);
+        } else {
+            document.getElementById('q-count').innerText = questionIndex + 1;
+            document.getElementById('inner-progress').style.width = (questionIndex * 10) + "%";
+            loadQuestion();
         }
     }
 
-    // --- LEVEL 1: CAMERA LOGIC ---
+    // --- LEVEL 1: CAMERA (LOCK-IN FLOW) ---
     async function initL1Camera() {
         const video = document.getElementById('video');
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = videoStream;
-            detectMotion();
-        } catch (e) { alert("Please allow camera for Level 1!"); }
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = videoStream;
+        detectMotion();
     }
 
-    function detectMotion() {
-        if (!videoStream || currentLevel !== 1) return;
+    function stopCamera() { if (videoStream) videoStream.getTracks().forEach(t => t.stop()); }
 
+    function detectMotion() {
+        if (currentLevel !== 1 || isQuestionAnswered) return;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 160; canvas.height = 120;
 
         const loop = () => {
-            if (!videoStream || currentLevel !== 1) return;
+            if (currentLevel !== 1 || isQuestionAnswered) return;
             ctx.drawImage(document.getElementById('video'), 0, 0, 160, 120);
             const frame = ctx.getImageData(0, 0, 160, 120);
-            
             let leftDark = 0, rightDark = 0;
-            // Scan left 30% and right 30%
             for (let i = 0; i < frame.data.length; i += 4) {
                 const x = (i / 4) % 160;
                 const brightness = (frame.data[i] + frame.data[i+1] + frame.data[i+2]) / 3;
-                if (brightness < 100) { // Detecting dark mass (pupil's head/body)
-                    if (x < 50) leftDark++;
-                    if (x > 110) rightDark++;
+                if (brightness < 90) { 
+                    if (x < 40) leftDark++;
+                    if (x > 120) rightDark++;
                 }
             }
-
-            const waitUI = document.getElementById('wait-timer');
-            const lZone = document.getElementById('left-zone');
-            const rZone = document.getElementById('right-zone');
-
-            if (leftDark > 1200) {
-                updateStability('left');
-                lZone.classList.add('active-choice');
-                rZone.classList.remove('active-choice');
-            } else if (rightDark > 1200) {
-                updateStability('right');
-                rZone.classList.add('active-choice');
-                lZone.classList.remove('active-choice');
-            } else {
-                updateStability(null);
-                lZone.classList.remove('active-choice');
-                rZone.classList.remove('active-choice');
-            }
+            if (leftDark > 1000) { tempChoice = true; highlightZone('left'); } 
+            else if (rightDark > 1000) { tempChoice = false; highlightZone('right'); }
             requestAnimationFrame(loop);
         };
         loop();
     }
 
-    function updateStability(side) {
-        const waitUI = document.getElementById('wait-timer');
-        if (side && side === currentDetection) {
-            stabilityCounter++;
-            waitUI.style.display = 'block';
-            waitUI.innerText = "Holding... " + "⭐".repeat(Math.floor(stabilityCounter/15));
-            if (stabilityCounter > 50) { // Approx 1.5 - 2 seconds
-                stabilityCounter = 0;
-                handleL1Answer(side === 'left');
-            }
-        } else {
-            stabilityCounter = 0;
-            currentDetection = side;
-            waitUI.style.display = 'none';
-        }
+    function highlightZone(side) {
+        document.getElementById('left-zone').className = 'zone' + (side === 'left' ? ' selected-left' : '');
+        document.getElementById('right-zone').className = 'zone' + (side === 'right' ? ' selected-right' : '');
+        document.getElementById('l1-check-btn').style.display = 'inline-block';
     }
 
-    function handleL1Answer(userChoice) {
+    function processL1Selection() {
+        isQuestionAnswered = true;
         const isMatch = document.getElementById('l1-question').dataset.ans === "true";
-        if (userChoice === isMatch) addScore(10);
-        else addScore(0);
-        nextQuestion();
+        if (tempChoice === isMatch) { totalScore += 10; showFeedback(true, "Great Job! 🌟"); }
+        else { showFeedback(false, "Oops! Try better next time. 🤗"); }
+        
+        document.getElementById('current-score').innerText = totalScore;
+        document.getElementById('l1-check-btn').style.display = 'none';
+        document.getElementById('l1-next-btn').style.display = 'inline-block';
     }
 
     function initL1Question() {
         const item = vocab[questionIndex];
         const isMatch = Math.random() > 0.5;
         document.getElementById('l1-emoji').innerText = item.e;
-        document.getElementById('l1-question').innerText = `Is it a ${isMatch ? item.w : vocab[(questionIndex+1)%10].w}?`;
+        document.getElementById('l1-question').innerText = `Is it a ${isMatch ? item.w : vocab[(questionIndex+2)%10].w}?`;
         document.getElementById('l1-question').dataset.ans = isMatch;
     }
 
-    // --- LEVEL 2: SPELLING ---
-    let l2Guess = "";
+    // --- LEVEL 2: SPELLING (NO DESK) ---
     function initL2() {
-        const item = vocab[questionIndex];
-        l2Guess = "";
+        let item = vocab[questionIndex];
+        if (item.w === 'desk') item = vocab[9];
         document.getElementById('l2-emoji').innerText = item.e;
         document.getElementById('l2-display').innerText = "";
         const opt = document.getElementById('l2-options');
         opt.innerHTML = "";
+        let guess = "";
         (item.w).split("").sort(() => Math.random() - 0.5).forEach(c => {
             const t = document.createElement('div');
             t.className = 'tile'; t.innerText = c.toUpperCase();
             t.onclick = () => {
                 t.classList.add('selected');
-                l2Guess += c;
-                document.getElementById('l2-display').innerText = l2Guess.toUpperCase();
-                if (l2Guess.length === item.w.length) {
-                    if (l2Guess === item.w) { addScore(10); nextQuestion(); }
-                    else { setTimeout(resetL2, 1000); }
+                guess += c;
+                document.getElementById('l2-display').innerText = guess.toUpperCase();
+                if (guess.length === item.w.length) {
+                    if (guess === item.w) {
+                        totalScore += 10; document.getElementById('current-score').innerText = totalScore;
+                        showFeedback(true, "Perfect Spelling! 🏆");
+                        document.getElementById('l2-next-btn').style.display = 'inline-block';
+                    } else { showFeedback(false, "Try spelling again!"); setTimeout(resetL2, 1000); }
                 }
             };
             opt.appendChild(t);
         });
     }
-    function resetL2() { l2Guess = ""; document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected')); document.getElementById('l2-display').innerText = ""; }
+    function resetL2() { clearFeedback(); document.getElementById('l2-display').innerText = ""; document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected')); }
 
     // --- LEVEL 3: VOICE ---
     function initL3() {
         const item = vocab[questionIndex];
         document.getElementById('l3-emoji').innerText = item.e;
         document.getElementById('l3-target-text').innerText = `It is a ${item.w}.`;
+        document.getElementById('mic-btn').style.display = 'inline-block';
     }
     function startSpeech() {
         const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -272,11 +286,12 @@
             const speech = e.results[0][0].transcript.toLowerCase();
             const target = `it is a ${vocab[questionIndex].w}`;
             if (speech.includes(target) || speech.includes(vocab[questionIndex].w)) {
-                addScore(10); nextQuestion();
-            } else {
-                document.getElementById('speech-feedback').innerText = "I heard: " + speech + ". Try again!";
-            }
-            document.getElementById('mic-btn').style.boxShadow = '0 5px #3a0ca3';
+                totalScore += 10; document.getElementById('current-score').innerText = totalScore;
+                showFeedback(true, "Wonderful Speaking! 🎤");
+                document.getElementById('mic-btn').style.display = 'none';
+                document.getElementById('l3-next-btn').style.display = 'inline-block';
+            } else { showFeedback(false, "I heard something else. Try again! 📣"); }
+            document.getElementById('mic-btn').style.boxShadow = '0 6px #3a0ca3';
         };
     }
 
@@ -284,91 +299,61 @@
     let l4Current = [];
     function initL4() {
         const item = vocab[questionIndex];
-        const sentence = ["It", "is", "a", item.w];
         l4Current = [];
         document.getElementById('l4-emoji').innerText = item.e;
         document.getElementById('l4-display').innerHTML = "";
+        document.getElementById('l4-controls').style.display = 'block';
         const opt = document.getElementById('l4-options');
         opt.innerHTML = "";
-        [...sentence].sort(() => Math.random() - 0.5).forEach(w => {
+        ["It", "is", "a", item.w].sort(() => Math.random() - 0.5).forEach(w => {
             const t = document.createElement('div');
             t.className = 'tile'; t.innerText = w;
             t.onclick = () => {
-                if (t.classList.contains('selected')) return;
                 t.classList.add('selected');
                 l4Current.push(w);
-                const span = document.createElement('span'); span.innerText = w;
-                document.getElementById('l4-display').appendChild(span);
+                const s = document.createElement('span'); s.innerText = w;
+                document.getElementById('l4-display').appendChild(s);
             };
             opt.appendChild(t);
         });
     }
     function checkL4() {
         const correct = `Itisa${vocab[questionIndex].w}`.toLowerCase();
-        if (l4Current.join("").toLowerCase() === correct) { addScore(10); nextQuestion(); }
-        else { alert("Not quite right! Try again."); resetL4(); }
+        if (l4Current.join("").toLowerCase() === correct) {
+            totalScore += 10; document.getElementById('current-score').innerText = totalScore;
+            showFeedback(true, "Great Sentence! ✍️");
+            document.getElementById('l4-controls').style.display = 'none';
+            document.getElementById('l4-next-btn').style.display = 'inline-block';
+        } else { showFeedback(false, "Check the order!"); resetL4(); }
     }
     function resetL4() { l4Current = []; document.getElementById('l4-display').innerHTML = ""; document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected')); }
 
-    // --- ENGINE ---
-    function addScore(pts) {
-        totalScore += pts;
-        document.getElementById('current-score').innerText = totalScore;
-        if (pts > 0) createConfetti();
-    }
-
-    function nextQuestion() {
-        questionIndex++;
-        if (questionIndex >= 10) {
-            if (currentLevel === 1) stopCamera(); // KILL CAMERA AFTER L1
-            currentLevel++;
-            questionIndex = 0;
-            if (currentLevel > 4) return finishGame();
-            startLevel(currentLevel);
-        } else {
-            document.getElementById('q-count').innerText = questionIndex + 1;
-            document.getElementById('inner-progress').style.width = ((questionIndex) * 10) + "%";
-            loadQuestion();
-        }
-    }
-
+    // --- CORE NAVIGATION ---
     function startLevel(lvl) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`screen-l${lvl}`).classList.add('active');
-        document.getElementById('inner-progress').style.width = "0%";
-        document.getElementById('q-count').innerText = "1";
         if (lvl === 1) initL1Camera();
         loadQuestion();
     }
-
     function loadQuestion() {
         if (currentLevel === 1) initL1Question();
         if (currentLevel === 2) initL2();
         if (currentLevel === 3) initL3();
         if (currentLevel === 4) initL4();
     }
-
     function finishGame() {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-final').classList.add('active');
-        const name = document.getElementById('p-name').value || "Pupil";
-        document.getElementById('final-stats').innerHTML = `
-            Great Job, <b>${name}</b>!<br><br>
-            Your Score: <span style="color:var(--secondary)">${totalScore} ⭐</span><br>
-            <small>You are an English Star!</small>
-        `;
+        document.getElementById('final-stats').innerHTML = `Superstar: <b>${document.getElementById('p-name').value}</b><br>Score: ${totalScore} ⭐`;
     }
-
     function createConfetti() {
-        for(let i=0; i<15; i++) {
+        for(let i=0; i<20; i++) {
             const c = document.createElement('div');
-            c.style.position = 'fixed';
-            c.style.left = Math.random()*100+'vw';
-            c.style.top = '-10px';
-            c.style.width = '10px'; c.style.height = '10px';
-            c.style.backgroundColor = ['#f72585','#4cc9f0','#4ade80'][Math.floor(Math.random()*3)];
+            c.style.position = 'fixed'; c.style.left = Math.random()*100+'vw'; c.style.top = '-10px';
+            c.style.width = '10px'; c.style.height = '10px'; c.style.zIndex = '100';
+            c.style.backgroundColor = ['#f72585','#4cc9f0','#4ade80','#fb8500'][Math.floor(Math.random()*4)];
             document.body.appendChild(c);
-            c.animate([{transform:'translateY(0)'},{transform:'translateY(100vh) rotate(360deg)'}], {duration: 2000}).onfinish = () => c.remove();
+            c.animate([{transform:'translateY(0)'},{transform:'translateY(100vh) rotate(720deg)'}], {duration: 2000}).onfinish = () => c.remove();
         }
     }
 </script>
