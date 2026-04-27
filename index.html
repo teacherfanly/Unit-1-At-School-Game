@@ -66,7 +66,7 @@
 <div id="game-container">
     <div id="stats" style="font-size: 1.5rem; font-weight: bold; color: var(--secondary); display: flex; justify-content: space-between;">
         <span>⭐ <span id="current-score">0</span></span>
-        <span>Question <span id="q-count">1</span>/10</span>
+        <span>Question <span id="q-count">1</span>/8</span>
     </div>
     <div class="progress-bar"><div id="inner-progress"></div></div>
     <div id="feedback-banner"></div>
@@ -89,68 +89,80 @@
     </div>
 
     <div id="screen-l2" class="screen">
-        <div class="q-area"><div id="l2-emoji" style="font-size: 6rem;"></div><div id="l2-display" style="font-size: 3rem; color: var(--secondary); font-weight: bold;"></div></div>
+        <div class="q-area"><div id="l2-emoji" style="font-size: 6rem;"></div><div id="l2-display" style="font-size: 3rem; color: var(--secondary); font-weight: bold; min-height: 60px;"></div></div>
         <div id="l2-options" class="tile-box"></div>
         <button id="l2-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-l3" class="screen">
-        <div class="q-area"><div id="l3-emoji" style="font-size: 6rem;"></div><h3 id="l3-target-text" style="font-size: 2rem;">...</h3></div>
+        <div class="q-area"><div id="l3-emoji" style="font-size: 6rem;"></div><h3 id="l3-target-text" style="font-size: 2rem; color: var(--secondary);">...</h3></div>
         <button id="mic-btn" class="btn" style="width:100px; height:100px; border-radius:50%; font-size:3rem;" onclick="startSpeech()">🎤</button>
         <button id="l3-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-l4" class="screen">
-        <div class="q-area"><div id="l4-emoji" style="font-size: 6rem;"></div><div id="l4-display" style="font-size: 1.8rem; padding: 10px;"></div></div>
+        <div class="q-area"><div id="l4-emoji" style="font-size: 6rem;"></div><div id="l4-display" style="font-size: 1.8rem; padding: 10px; min-height: 40px;"></div></div>
         <div id="l4-options" class="tile-box"></div>
         <button id="l4-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-final" class="screen">
         <h1>Finish! 🎉</h1>
-        <div id="final-stats" style="font-size: 2rem;"></div>
+        <div id="final-stats" style="font-size: 2rem; background: white; padding: 20px; border-radius: 20px;"></div>
         <button class="btn" onclick="location.reload()">PLAY AGAIN 🔄</button>
     </div>
 </div>
 
 <script>
+    // Removed desk and rubber
     const vocab = [
-        {w: 'pen', e: '🖊️'}, {w: 'pencil', e: '✏️'}, {w: 'desk', e: '🖥️'},
+        {w: 'pen', e: '🖊️'}, {w: 'pencil', e: '✏️'}, 
         {w: 'chair', e: '🪑'}, {w: 'bag', e: '🎒'}, {w: 'shoes', e: '👟'},
-        {w: 'book', e: '📖'}, {w: 'ruler', e: '📏'}, {w: 'rubber', e: '🧼'},
+        {w: 'book', e: '📖'}, {w: 'ruler', e: '📏'}, 
         {w: 'notebook', e: '📓'}
     ];
 
     let currentLevel = 1, questionIndex = 0, totalScore = 0, videoStream = null, tempChoice = null, isQuestionAnswered = false;
 
     function startLevel(lvl) {
+        currentLevel = lvl;
+        questionIndex = 0; // Reset question count for new level
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`screen-l${lvl}`).classList.add('active');
-        currentLevel = lvl;
+        
+        document.getElementById('q-count').innerText = "1";
+        document.getElementById('inner-progress').style.width = "0%";
+        
         if (lvl === 1) initL1Camera();
         loadQuestion();
     }
 
     function nextQuestion() {
-        // RESET EVERYTHING FOR NEXT QUESTION
         isQuestionAnswered = false;
         tempChoice = null;
         document.getElementById('feedback-banner').innerText = "";
         document.querySelectorAll('.btn-next').forEach(b => b.style.display = 'none');
-        document.getElementById('left-zone').className = 'zone';
-        document.getElementById('right-zone').className = 'zone';
         
+        // Reset zones for L1
+        if(currentLevel === 1) {
+            document.getElementById('left-zone').className = 'zone';
+            document.getElementById('right-zone').className = 'zone';
+        }
+
         questionIndex++;
-        if (questionIndex >= 10) {
+
+        // There are 8 items in vocab now
+        if (questionIndex >= vocab.length) {
             if (currentLevel === 1) stopCamera();
             if (currentLevel >= 4) return finishGame();
+            
+            // Move to next level smoothly
             startLevel(currentLevel + 1);
-            questionIndex = 0;
+        } else {
+            document.getElementById('q-count').innerText = questionIndex + 1;
+            document.getElementById('inner-progress').style.width = (questionIndex / vocab.length * 100) + "%";
+            loadQuestion();
         }
-        
-        document.getElementById('q-count').innerText = questionIndex + 1;
-        document.getElementById('inner-progress').style.width = (questionIndex * 10) + "%";
-        loadQuestion();
     }
 
     // --- LEVEL 1 CORE ---
@@ -164,14 +176,13 @@
     function stopCamera() { if (videoStream) videoStream.getTracks().forEach(t => t.stop()); }
 
     function detectMotion() {
-        if (currentLevel !== 1) return;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 160; canvas.height = 120;
         
         const loop = () => {
             if (currentLevel !== 1 || isQuestionAnswered) {
-                requestAnimationFrame(loop);
+                if (currentLevel === 1) requestAnimationFrame(loop);
                 return;
             }
             ctx.drawImage(document.getElementById('video'), 0, 0, 160, 120);
@@ -220,20 +231,15 @@
         if (currentLevel === 1) {
             const match = Math.random() > 0.5;
             document.getElementById('l1-emoji').innerText = item.e;
-            document.getElementById('l1-question').innerText = `Is it a ${match ? item.w : vocab[(questionIndex + 1) % 10].w}?`;
+            document.getElementById('l1-question').innerText = `Is it a ${match ? item.w : vocab[(questionIndex + 1) % vocab.length].w}?`;
             document.getElementById('l1-question').dataset.ans = match;
-            document.getElementById('l1-check-btn').style.display = 'none';
-        } else if (currentLevel === 2) {
-            initL2();
-        } else if (currentLevel === 3) {
+        } else if (currentLevel === 2) initL2();
+        else if (currentLevel === 3) {
             document.getElementById('l3-emoji').innerText = item.e;
             document.getElementById('l3-target-text').innerText = `Say: It is a ${item.w}`;
-        } else if (currentLevel === 4) {
-            initL4();
-        }
+        } else if (currentLevel === 4) initL4();
     }
 
-    // Level 2, 3, 4 mini-functions (kept basic for flow)
     function initL2() {
         const item = vocab[questionIndex];
         document.getElementById('l2-emoji').innerText = item.e;
@@ -247,6 +253,7 @@
                 document.getElementById('l2-display').innerText = guess.toUpperCase();
                 if (guess === item.w) {
                     totalScore += 10; document.getElementById('l2-next-btn').style.display = 'inline-block';
+                    document.getElementById('current-score').innerText = totalScore;
                 } else if (guess.length === item.w.length) { setTimeout(initL2, 600); }
             };
             opt.appendChild(t);
@@ -264,6 +271,7 @@
                 t.classList.add('selected'); arr.push(w); disp.innerText = arr.join(" ");
                 if (arr.join(" ").toLowerCase() === `it is a ${item.w}`) {
                     totalScore += 10; document.getElementById('l4-next-btn').style.display = 'inline-block';
+                    document.getElementById('current-score').innerText = totalScore;
                 } else if (arr.length === 4) { setTimeout(initL4, 600); }
             };
             opt.appendChild(t);
@@ -276,6 +284,7 @@
         rec.onresult = (e) => {
             if (e.results[0][0].transcript.toLowerCase().includes(vocab[questionIndex].w)) {
                 totalScore += 10; document.getElementById('l3-next-btn').style.display = 'inline-block';
+                document.getElementById('current-score').innerText = totalScore;
             }
         };
     }
@@ -283,7 +292,7 @@
     function finishGame() {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-final').classList.add('active');
-        document.getElementById('final-stats').innerText = `Score: ${totalScore}`;
+        document.getElementById('final-stats').innerText = `Total Stars: ${totalScore}`;
     }
 </script>
 </body>
