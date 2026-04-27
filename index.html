@@ -57,6 +57,11 @@
             box-shadow: 0 5px var(--primary);
         }
         .tile.selected { opacity: 0.3; pointer-events: none; }
+
+        #leaderboard { 
+            background: white; border-radius: 20px; padding: 15px; 
+            margin: 20px 0; box-shadow: 0 4px #ddd; text-align: left;
+        }
         
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
@@ -72,9 +77,17 @@
     <div id="feedback-banner"></div>
 
     <div id="screen-login" class="screen active">
-        <h1 style="font-size: 3rem; color: var(--secondary);">English Hero! 👋</h1>
-        <input type="text" id="p-name" placeholder="Enter name" style="padding: 15px; border-radius: 20px; width: 70%; border: 4px solid var(--primary); font-size: 1.5rem; text-align: center;">
-        <br><button class="btn" onclick="startLevel(1)" style="margin-top: 20px;">START 🚀</button>
+        <h1 style="font-size: 3rem; color: var(--secondary); margin-bottom: 10px;">English Hero! 👋</h1>
+        
+        <div id="leaderboard">
+            <h3 style="margin: 0 0 10px 0; color: var(--primary); text-align: center;">🏆 Hall of Fame</h3>
+            <div id="score-list" style="font-size: 1.2rem; min-height: 50px;">
+                Loading scores...
+            </div>
+        </div>
+
+        <input type="text" id="p-name" placeholder="Enter Hero Name" style="padding: 15px; border-radius: 20px; width: 80%; border: 4px solid var(--primary); font-size: 1.5rem; text-align: center;">
+        <br><button class="btn" onclick="startGame()" style="margin-top: 20px;">START 🚀</button>
     </div>
 
     <div id="screen-l1" class="screen">
@@ -96,25 +109,25 @@
 
     <div id="screen-l3" class="screen">
         <div class="q-area"><div id="l3-emoji" style="font-size: 6rem;"></div><h3 id="l3-target-text" style="font-size: 2rem; color: var(--secondary);">...</h3></div>
-        <button id="mic-btn" class="btn" style="width:100px; height:100px; border-radius:50%; font-size:3rem;" onclick="startSpeech()">🎤</button>
+        <button id="mic-btn" class="btn" style="width:120px; height:120px; border-radius:50%; font-size:3rem;" onclick="startSpeech()">🎤</button>
+        <p>Click the mic and speak!</p>
         <button id="l3-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-l4" class="screen">
-        <div class="q-area"><div id="l4-emoji" style="font-size: 6rem;"></div><div id="l4-display" style="font-size: 1.8rem; padding: 10px; min-height: 40px;"></div></div>
+        <div class="q-area"><div id="l4-emoji" style="font-size: 6rem;"></div><div id="l4-display" style="font-size: 1.8rem; padding: 10px; min-height: 40px; color: var(--secondary); font-weight: bold;"></div></div>
         <div id="l4-options" class="tile-box"></div>
         <button id="l4-next-btn" class="btn btn-next" onclick="nextQuestion()">NEXT ➡️</button>
     </div>
 
     <div id="screen-final" class="screen">
         <h1>Finish! 🎉</h1>
-        <div id="final-stats" style="font-size: 2rem; background: white; padding: 20px; border-radius: 20px;"></div>
+        <div id="final-stats" style="font-size: 2.5rem; background: white; padding: 30px; border-radius: 20px; margin-bottom: 20px;"></div>
         <button class="btn" onclick="location.reload()">PLAY AGAIN 🔄</button>
     </div>
 </div>
 
 <script>
-    // Removed desk and rubber
     const vocab = [
         {w: 'pen', e: '🖊️'}, {w: 'pencil', e: '✏️'}, 
         {w: 'chair', e: '🪑'}, {w: 'bag', e: '🎒'}, {w: 'shoes', e: '👟'},
@@ -123,18 +136,45 @@
     ];
 
     let currentLevel = 1, questionIndex = 0, totalScore = 0, videoStream = null, tempChoice = null, isQuestionAnswered = false;
+    let playerName = "";
+
+    window.onload = displayLeaderboard;
+
+    function displayLeaderboard() {
+        const scoreList = document.getElementById('score-list');
+        const scores = JSON.parse(localStorage.getItem('heroScores')) || [];
+        if (scores.length === 0) {
+            scoreList.innerHTML = "<center>No legends yet. Start playing!</center>";
+            return;
+        }
+        scores.sort((a, b) => b.score - a.score);
+        scoreList.innerHTML = scores.slice(0, 5).map((s, i) => 
+            `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px;">
+                <span>${i+1}. <b>${s.name}</b></span> <span>${s.score} ⭐</span>
+            </div>`
+        ).join('');
+    }
+
+    function startGame() {
+        const input = document.getElementById('p-name');
+        if (!input.value.trim()) { alert("Enter your name first!"); return; }
+        playerName = input.value.trim();
+        startLevel(1);
+    }
 
     function startLevel(lvl) {
         currentLevel = lvl;
-        questionIndex = 0; // Reset question count for new level
+        questionIndex = 0;
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`screen-l${lvl}`).classList.add('active');
-        
-        document.getElementById('q-count').innerText = "1";
-        document.getElementById('inner-progress').style.width = "0%";
-        
+        updateUI();
         if (lvl === 1) initL1Camera();
         loadQuestion();
+    }
+
+    function updateUI() {
+        document.getElementById('q-count').innerText = questionIndex + 1;
+        document.getElementById('inner-progress').style.width = (questionIndex / vocab.length * 100) + "%";
     }
 
     function nextQuestion() {
@@ -143,36 +183,31 @@
         document.getElementById('feedback-banner').innerText = "";
         document.querySelectorAll('.btn-next').forEach(b => b.style.display = 'none');
         
-        // Reset zones for L1
         if(currentLevel === 1) {
             document.getElementById('left-zone').className = 'zone';
             document.getElementById('right-zone').className = 'zone';
         }
 
         questionIndex++;
-
-        // There are 8 items in vocab now
         if (questionIndex >= vocab.length) {
             if (currentLevel === 1) stopCamera();
             if (currentLevel >= 4) return finishGame();
-            
-            // Move to next level smoothly
             startLevel(currentLevel + 1);
         } else {
-            document.getElementById('q-count').innerText = questionIndex + 1;
-            document.getElementById('inner-progress').style.width = (questionIndex / vocab.length * 100) + "%";
+            updateUI();
             loadQuestion();
         }
     }
 
-    // --- LEVEL 1 CORE ---
+    // --- LEVEL 1: MOTION LOGIC ---
     async function initL1Camera() {
         try {
             videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
             document.getElementById('video').srcObject = videoStream;
             detectMotion();
-        } catch(e) { alert("Camera error!"); }
+        } catch(e) { alert("Camera required!"); }
     }
+
     function stopCamera() { if (videoStream) videoStream.getTracks().forEach(t => t.stop()); }
 
     function detectMotion() {
@@ -215,15 +250,18 @@
         const correct = document.getElementById('l1-question').dataset.ans === "true";
         if (tempChoice === correct) {
             totalScore += 10;
-            document.getElementById('feedback-banner').innerText = "YES! 🌟";
-            document.getElementById('feedback-banner').className = "correct-text";
+            showFeedback("YES! 🌟", "correct-text");
         } else {
-            document.getElementById('feedback-banner').innerText = "Oops! 😮";
-            document.getElementById('feedback-banner').className = "wrong-text";
+            showFeedback("Oops! 😮", "wrong-text");
         }
         document.getElementById('current-score').innerText = totalScore;
         document.getElementById('l1-check-btn').style.display = 'none';
         document.getElementById('l1-next-btn').style.display = 'inline-block';
+    }
+
+    function showFeedback(msg, cls) {
+        const fb = document.getElementById('feedback-banner');
+        fb.innerText = msg; fb.className = cls;
     }
 
     function loadQuestion() {
@@ -279,20 +317,32 @@
     }
 
     function startSpeech() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.lang = 'en-US'; rec.start();
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!SpeechRecognition) { alert("Speech not supported in this browser."); return; }
+        const rec = new SpeechRecognition();
+        rec.lang = 'en-US'; 
+        document.getElementById('mic-btn').style.background = '#f72585';
+        rec.start();
         rec.onresult = (e) => {
-            if (e.results[0][0].transcript.toLowerCase().includes(vocab[questionIndex].w)) {
+            const talk = e.results[0][0].transcript.toLowerCase();
+            if (talk.includes(vocab[questionIndex].w)) {
                 totalScore += 10; document.getElementById('l3-next-btn').style.display = 'inline-block';
                 document.getElementById('current-score').innerText = totalScore;
+                document.getElementById('mic-btn').style.background = '#4ade80';
             }
         };
+        rec.onend = () => { document.getElementById('mic-btn').style.background = '#4cc9f0'; };
     }
 
     function finishGame() {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-final').classList.add('active');
-        document.getElementById('final-stats').innerText = `Total Stars: ${totalScore}`;
+        document.getElementById('final-stats').innerText = `${playerName}: ${totalScore} Stars!`;
+        
+        // Save Score to Hall of Fame
+        const scores = JSON.parse(localStorage.getItem('heroScores')) || [];
+        scores.push({name: playerName, score: totalScore});
+        localStorage.setItem('heroScores', JSON.stringify(scores));
     }
 </script>
 </body>
