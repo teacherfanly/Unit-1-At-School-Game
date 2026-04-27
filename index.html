@@ -30,12 +30,10 @@
         .progress-bar { width: 100%; height: 20px; background: #ddd; border-radius: 10px; margin: 10px 0; border: 2px solid #fff; }
         #inner-progress { width: 0%; height: 100%; background: var(--success); border-radius: 8px; transition: 0.3s; }
         
-        /* Feedback Message */
         #feedback-banner { font-size: 2rem; font-weight: bold; margin: 10px 0; min-height: 2.5rem; transition: 0.3s; }
         .correct-text { color: var(--success); transform: scale(1.1); }
         .wrong-text { color: var(--danger); }
 
-        /* Level 1 Camera Layout */
         .q-area { background: white; border-radius: 25px; padding: 15px; margin-bottom: 15px; box-shadow: 0 8px #e9ecef; position: relative; }
         #camera-wrapper { 
             position: relative; width: 480px; height: 320px; margin: 0 auto; 
@@ -54,7 +52,6 @@
         .zone.selected-left { background: rgba(74, 222, 128, 0.7) !important; font-size: 1.5rem; }
         .zone.selected-right { background: rgba(255, 77, 77, 0.7) !important; font-size: 1.5rem; }
         
-        /* Game Tiles */
         .tile-box { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 20px 0; }
         .tile { 
             background: white; border: 3px solid var(--primary); padding: 15px 25px; 
@@ -147,7 +144,6 @@
     let tempChoice = null;
     let isQuestionAnswered = false;
 
-    // --- UTILS ---
     function showFeedback(isCorrect, text) {
         const banner = document.getElementById('feedback-banner');
         banner.innerText = text;
@@ -160,7 +156,6 @@
         document.getElementById('feedback-banner').className = "";
     }
 
-    // --- ENGINE ---
     function nextQuestion() {
         clearFeedback();
         isQuestionAnswered = false;
@@ -180,12 +175,16 @@
         }
     }
 
-    // --- LEVEL 1: CAMERA (LOCK-IN FLOW) ---
+    // --- LEVEL 1: CAMERA (FIXED MIRROR LOGIC) ---
     async function initL1Camera() {
-        const video = document.getElementById('video');
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = videoStream;
-        detectMotion();
+        try {
+            const video = document.getElementById('video');
+            videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = videoStream;
+            detectMotion();
+        } catch (err) {
+            alert("Camera needed for Level 1!");
+        }
     }
 
     function stopCamera() { if (videoStream) videoStream.getTracks().forEach(t => t.stop()); }
@@ -200,17 +199,28 @@
             if (currentLevel !== 1 || isQuestionAnswered) return;
             ctx.drawImage(document.getElementById('video'), 0, 0, 160, 120);
             const frame = ctx.getImageData(0, 0, 160, 120);
-            let leftDark = 0, rightDark = 0;
+            let leftPixels = 0, rightPixels = 0;
+            
             for (let i = 0; i < frame.data.length; i += 4) {
                 const x = (i / 4) % 160;
                 const brightness = (frame.data[i] + frame.data[i+1] + frame.data[i+2]) / 3;
                 if (brightness < 90) { 
-                    if (x < 40) leftDark++;
-                    if (x > 120) rightDark++;
+                    if (x < 40) leftPixels++;
+                    if (x > 120) rightPixels++;
                 }
             }
-            if (leftDark > 1000) { tempChoice = true; highlightZone('left'); } 
-            else if (rightDark > 1000) { tempChoice = false; highlightZone('right'); }
+            
+            // If user tilts to their PHYSICAL RIGHT, the mirrored image moves to the LEFT of the canvas (leftPixels)
+            // We want PHYSICAL RIGHT to be "YES"
+            if (leftPixels > 1000) { 
+                tempChoice = true; 
+                highlightZone('left'); 
+            } 
+            // If user tilts to their PHYSICAL LEFT, mirrored image moves to RIGHT (rightPixels)
+            else if (rightPixels > 1000) { 
+                tempChoice = false; 
+                highlightZone('right'); 
+            }
             requestAnimationFrame(loop);
         };
         loop();
@@ -225,9 +235,12 @@
     function processL1Selection() {
         isQuestionAnswered = true;
         const isMatch = document.getElementById('l1-question').dataset.ans === "true";
-        if (tempChoice === isMatch) { totalScore += 10; showFeedback(true, "Great Job! 🌟"); }
-        else { showFeedback(false, "Oops! Try better next time. 🤗"); }
-        
+        if (tempChoice === isMatch) { 
+            totalScore += 10; 
+            showFeedback(true, "Great Job! 🌟"); 
+        } else { 
+            showFeedback(false, "Oops! Try better next time. 🤗"); 
+        }
         document.getElementById('current-score').innerText = totalScore;
         document.getElementById('l1-check-btn').style.display = 'none';
         document.getElementById('l1-next-btn').style.display = 'inline-block';
@@ -239,18 +252,22 @@
         document.getElementById('l1-emoji').innerText = item.e;
         document.getElementById('l1-question').innerText = `Is it a ${isMatch ? item.w : vocab[(questionIndex+2)%10].w}?`;
         document.getElementById('l1-question').dataset.ans = isMatch;
+        document.getElementById('l1-next-btn').style.display = 'none';
     }
 
-    // --- LEVEL 2: SPELLING (NO DESK) ---
+    // --- LEVEL 2: SPELLING (FIXED STUCK ISSUE) ---
     function initL2() {
         let item = vocab[questionIndex];
-        if (item.w === 'desk') item = vocab[9];
         document.getElementById('l2-emoji').innerText = item.e;
         document.getElementById('l2-display').innerText = "";
+        document.getElementById('l2-next-btn').style.display = 'none';
+        
         const opt = document.getElementById('l2-options');
         opt.innerHTML = "";
         let guess = "";
-        (item.w).split("").sort(() => Math.random() - 0.5).forEach(c => {
+        
+        const letters = item.w.split("").sort(() => Math.random() - 0.5);
+        letters.forEach(c => {
             const t = document.createElement('div');
             t.className = 'tile'; t.innerText = c.toUpperCase();
             t.onclick = () => {
@@ -258,17 +275,27 @@
                 guess += c;
                 document.getElementById('l2-display').innerText = guess.toUpperCase();
                 if (guess.length === item.w.length) {
-                    if (guess === item.w) {
-                        totalScore += 10; document.getElementById('current-score').innerText = totalScore;
+                    if (guess.toLowerCase() === item.w.toLowerCase()) {
+                        totalScore += 10; 
+                        document.getElementById('current-score').innerText = totalScore;
                         showFeedback(true, "Perfect Spelling! 🏆");
                         document.getElementById('l2-next-btn').style.display = 'inline-block';
-                    } else { showFeedback(false, "Try spelling again!"); setTimeout(resetL2, 1000); }
+                    } else { 
+                        showFeedback(false, "Try again!"); 
+                        setTimeout(resetL2, 1000); 
+                    }
                 }
             };
             opt.appendChild(t);
         });
     }
-    function resetL2() { clearFeedback(); document.getElementById('l2-display').innerText = ""; document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected')); }
+    function resetL2() { 
+        clearFeedback(); 
+        document.getElementById('l2-display').innerText = ""; 
+        document.querySelectorAll('#l2-options .tile').forEach(t => t.classList.remove('selected'));
+        // Reset local guess variable would require refactoring, so we just re-init if they fail
+        initL2();
+    }
 
     // --- LEVEL 3: VOICE ---
     function initL3() {
@@ -276,21 +303,28 @@
         document.getElementById('l3-emoji').innerText = item.e;
         document.getElementById('l3-target-text').innerText = `It is a ${item.w}.`;
         document.getElementById('mic-btn').style.display = 'inline-block';
+        document.getElementById('l3-next-btn').style.display = 'none';
     }
     function startSpeech() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return alert("Voice not supported in this browser.");
+        
+        const rec = new SpeechRecognition();
         rec.lang = 'en-US';
         document.getElementById('mic-btn').style.boxShadow = '0 0 20px red';
         rec.start();
         rec.onresult = (e) => {
             const speech = e.results[0][0].transcript.toLowerCase();
-            const target = `it is a ${vocab[questionIndex].w}`;
-            if (speech.includes(target) || speech.includes(vocab[questionIndex].w)) {
-                totalScore += 10; document.getElementById('current-score').innerText = totalScore;
+            const target = vocab[questionIndex].w.toLowerCase();
+            if (speech.includes(target)) {
+                totalScore += 10; 
+                document.getElementById('current-score').innerText = totalScore;
                 showFeedback(true, "Wonderful Speaking! 🎤");
                 document.getElementById('mic-btn').style.display = 'none';
                 document.getElementById('l3-next-btn').style.display = 'inline-block';
-            } else { showFeedback(false, "I heard something else. Try again! 📣"); }
+            } else { 
+                showFeedback(false, "Try again! 📣"); 
+            }
             document.getElementById('mic-btn').style.boxShadow = '0 6px #3a0ca3';
         };
     }
@@ -303,6 +337,7 @@
         document.getElementById('l4-emoji').innerText = item.e;
         document.getElementById('l4-display').innerHTML = "";
         document.getElementById('l4-controls').style.display = 'block';
+        document.getElementById('l4-next-btn').style.display = 'none';
         const opt = document.getElementById('l4-options');
         opt.innerHTML = "";
         ["It", "is", "a", item.w].sort(() => Math.random() - 0.5).forEach(w => {
@@ -318,15 +353,23 @@
         });
     }
     function checkL4() {
-        const correct = `Itisa${vocab[questionIndex].w}`.toLowerCase();
-        if (l4Current.join("").toLowerCase() === correct) {
-            totalScore += 10; document.getElementById('current-score').innerText = totalScore;
+        const target = `It is a ${vocab[questionIndex].w}`.toLowerCase();
+        if (l4Current.join(" ").toLowerCase() === target) {
+            totalScore += 10; 
+            document.getElementById('current-score').innerText = totalScore;
             showFeedback(true, "Great Sentence! ✍️");
             document.getElementById('l4-controls').style.display = 'none';
             document.getElementById('l4-next-btn').style.display = 'inline-block';
-        } else { showFeedback(false, "Check the order!"); resetL4(); }
+        } else { 
+            showFeedback(false, "Check the order!"); 
+            resetL4(); 
+        }
     }
-    function resetL4() { l4Current = []; document.getElementById('l4-display').innerHTML = ""; document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected')); }
+    function resetL4() { 
+        l4Current = []; 
+        document.getElementById('l4-display').innerHTML = ""; 
+        document.querySelectorAll('#l4-options .tile').forEach(t => t.classList.remove('selected')); 
+    }
 
     // --- CORE NAVIGATION ---
     function startLevel(lvl) {
@@ -344,16 +387,17 @@
     function finishGame() {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-final').classList.add('active');
-        document.getElementById('final-stats').innerHTML = `Superstar: <b>${document.getElementById('p-name').value}</b><br>Score: ${totalScore} ⭐`;
+        const name = document.getElementById('p-name').value || "Hero";
+        document.getElementById('final-stats').innerHTML = `Superstar: <b>${name}</b><br>Score: ${totalScore} ⭐`;
     }
     function createConfetti() {
-        for(let i=0; i<20; i++) {
+        for(let i=0; i<15; i++) {
             const c = document.createElement('div');
             c.style.position = 'fixed'; c.style.left = Math.random()*100+'vw'; c.style.top = '-10px';
             c.style.width = '10px'; c.style.height = '10px'; c.style.zIndex = '100';
             c.style.backgroundColor = ['#f72585','#4cc9f0','#4ade80','#fb8500'][Math.floor(Math.random()*4)];
             document.body.appendChild(c);
-            c.animate([{transform:'translateY(0)'},{transform:'translateY(100vh) rotate(720deg)'}], {duration: 2000}).onfinish = () => c.remove();
+            c.animate([{transform:'translateY(0)'},{transform:'translateY(100vh) rotate(720deg)'}], {duration: 1500}).onfinish = () => c.remove();
         }
     }
 </script>
