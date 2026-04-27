@@ -3,401 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Adventure: Year 1</title>
+    <title>English Adventure Hero</title>
     <style>
         :root {
-            --primary: #4cc9f0;
-            --secondary: #f72585;
-            --success: #4ade80;
-            --warning: #fb8500;
-            --bg: #fdf0d5;
-            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --primary: #4cc9f0; --secondary: #f72585; --success: #4ade80;
+            --danger: #ff4d4d; --bg: #fdf0d5;
         }
-
-        * { box-sizing: border-box; font-family: var(--font-main); }
-
-        body {
-            margin: 0;
-            background-color: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
-            touch-action: manipulation;
+        body { 
+            margin: 0; background: var(--bg); font-family: 'Comic Sans MS', cursive, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; overflow-x: hidden;
         }
-
-        /* --- UI ELEMENTS --- */
-        #game-container {
-            width: 100%;
-            max-width: 500px;
-            min-height: 100vh;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-        }
-
-        .screen { display: none; animation: fadeIn 0.5s ease; }
+        #game-container { width: 100%; max-width: 600px; padding: 20px; text-align: center; }
+        .screen { display: none; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .active { display: block; }
-
-        h1 { color: var(--secondary); font-size: 2.5rem; text-shadow: 3px 3px white; }
+        
+        /* UI Elements */
         .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 6px #3a0ca3;
-            transition: all 0.1s;
-            margin: 10px;
-            display: inline-block;
+            background: var(--primary); color: white; border: none; padding: 15px 30px;
+            border-radius: 50px; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 5px #3a0ca3; margin: 10px; transition: 0.2s;
         }
-        .btn:hover { transform: scale(1.05); background: #4895ef; }
-        .btn:active { transform: translateY(4px); box-shadow: 0 2px #3a0ca3; }
-
-        /* --- PROGRESS BAR --- */
-        .progress-container {
-            width: 100%;
-            height: 20px;
-            background: #ddd;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        #progress-bar {
-            width: 0%;
-            height: 100%;
-            background: var(--success);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-        }
-
-        /* --- LEVELS --- */
-        .item-display { font-size: 8rem; margin: 20px; display: block; animation: bounce 2s infinite; }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px #3a0ca3; }
+        .progress-bar { width: 100%; height: 15px; background: #ddd; border-radius: 10px; margin: 10px 0; overflow: hidden; }
+        #inner-progress { width: 0%; height: 100%; background: var(--success); transition: 0.3s; }
         
-        /* Spelling Bee */
-        .letter-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
-        .letter-tile {
-            width: 50px; height: 50px;
-            background: white;
-            border: 3px solid var(--primary);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
+        /* Level 1 Camera */
+        #camera-wrapper { position: relative; width: 320px; height: 240px; margin: 0 auto; border: 5px solid white; border-radius: 15px; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .zone { position: absolute; top: 0; width: 50%; height: 100%; opacity: 0.3; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; pointer-events: none; }
+        #left-zone { left: 0; background: var(--success); border-right: 2px dashed white; }
+        #right-zone { right: 0; background: var(--danger); }
+
+        /* Level 2 & 4 Tiles */
+        .tile-box { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 20px 0; }
+        .tile { 
+            background: white; border: 3px solid var(--primary); padding: 10px 20px; 
+            border-radius: 10px; cursor: pointer; font-size: 1.5rem; font-weight: bold;
+            animation: bounce 2s infinite;
         }
-        .letter-tile.used { opacity: 0.3; pointer-events: none; }
-
-        /* Voice Recognition */
-        .mic-btn { font-size: 3rem; background: var(--secondary); border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 20px auto; }
-        .recording { animation: pulse 1s infinite; background: red !important; }
-
-        /* --- ANIMATIONS --- */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        @keyframes tilt-left { from { transform: rotate(0); } to { transform: rotate(-15deg); } }
-        @keyframes tilt-right { from { transform: rotate(0); } to { transform: rotate(15deg); } }
-
-        /* Confetti */
-        .confetti { position: fixed; width: 10px; height: 10px; background: red; z-index: 1000; }
+        .tile.selected { opacity: 0.2; pointer-events: none; }
         
-        /* Leaderboard Table */
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; margin-top: 20px; }
-        th, td { padding: 15px; border-bottom: 1px solid #eee; }
-        th { background: var(--primary); color: white; }
-        .top-score { background: #fff3b0; font-weight: bold; }
+        .emoji-large { font-size: 6rem; margin: 10px; display: block; }
+        .score-pop { position: fixed; top: 20%; font-size: 3rem; color: var(--secondary); font-weight: bold; pointer-events: none; }
+
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
+    <div id="stats" style="font-size: 1.5rem; font-weight: bold; color: var(--secondary); margin-bottom: 10px;">
+        Score: <span id="current-score">0</span> ⭐ | Question: <span id="q-count">1</span>/10
+    </div>
+    <div class="progress-bar"><div id="inner-progress"></div></div>
+
     <div id="screen-login" class="screen active">
-        <h1>School Fun! 🎒</h1>
-        <p style="font-size: 1.2rem;">Enter your name to start:</p>
-        <input type="text" id="player-name" placeholder="Your Name" style="padding: 15px; border-radius: 10px; border: 2px solid var(--primary); width: 80%; font-size: 1.2rem; margin-bottom: 20px;">
-        <br>
-        <button class="btn" onclick="startGame()">Go! 🚀</button>
+        <h1>English Hero! 🌟</h1>
+        <input type="text" id="p-name" placeholder="Enter Name..." style="padding: 15px; border-radius: 20px; width: 70%; border: 2px solid var(--primary);">
+        <br><button class="btn" onclick="startLevel(1)">START GAME 🎮</button>
     </div>
 
     <div id="screen-l1" class="screen">
-        <div class="progress-container"><div id="progress-bar" style="width: 25%"></div></div>
-        <h2>Level 1: Is this correct?</h2>
-        <div id="l1-emoji" class="item-display">🖊️</div>
-        <h3 id="l1-word">Is this a PEN?</h3>
-        <p>(Tilt Left for YES, Right for NO)</p>
-        <div style="display: flex; justify-content: center;">
-            <button class="btn" style="background: var(--success);" onclick="checkL1(true)">YES ✅</button>
-            <button class="btn" style="background: var(--secondary);" onclick="checkL1(false)">NO ❌</button>
+        <h3>Move your head into the correct zone!</h3>
+        <p id="l1-question">Is it a ...?</p>
+        <div id="camera-wrapper">
+            <video id="video" autoplay playsinline></video>
+            <div id="left-zone" class="zone">YES</div>
+            <div id="right-zone" class="zone">NO</div>
         </div>
+        <div id="l1-emoji" class="emoji-large"></div>
+        <p>Left = Yes, it is. | Right = No, it isn't.</p>
     </div>
 
     <div id="screen-l2" class="screen">
-        <div class="progress-container"><div id="progress-bar" style="width: 50%"></div></div>
-        <h2>Level 2: Spell it!</h2>
-        <div id="l2-emoji" class="item-display">🎒</div>
-        <div id="spelling-answer" style="font-size: 2rem; letter-spacing: 5px; min-height: 40px; color: var(--secondary); font-weight: bold;"></div>
-        <div id="l2-letters" class="letter-container"></div>
-        <button class="btn" style="background: #ccc; font-size: 1rem;" onclick="resetSpelling()">Reset 🔄</button>
+        <h3>Spell the word!</h3>
+        <div id="l2-emoji" class="emoji-large"></div>
+        <div id="l2-display" style="font-size: 2.5rem; min-height: 50px; color: var(--secondary);"></div>
+        <div id="l2-options" class="tile-box"></div>
+        <button class="btn" style="background:var(--danger)" onclick="resetL2()">Reset 🔄</button>
     </div>
 
     <div id="screen-l3" class="screen">
-        <div class="progress-container"><div id="progress-bar" style="width: 75%"></div></div>
-        <h2>Level 3: Speak! 🎤</h2>
-        <div id="l3-emoji" class="item-display">👟</div>
-        <h3>Say the word: <span id="l3-target" style="color: var(--secondary)">SHOES</span></h3>
-        <button id="mic-btn" class="mic-btn" onclick="startVoice()">🎤</button>
-        <p id="voice-msg">Press the mic and talk!</p>
+        <h3>Say: "It is a [word]."</h3>
+        <div id="l3-emoji" class="emoji-large"></div>
+        <button id="mic-btn" class="btn" style="width:100px; height:100px; border-radius:50%; font-size:2rem;" onclick="startSpeech()">🎤</button>
+        <p id="speech-feedback">Click mic to speak!</p>
     </div>
 
     <div id="screen-l4" class="screen">
-        <div class="progress-container"><div id="progress-bar" style="width: 90%"></div></div>
-        <h2>Level 4: Build it!</h2>
-        <div id="l4-emoji" class="item-display">🪑</div>
-        <div id="sentence-target" style="border-bottom: 2px dashed #999; min-height: 50px; margin-bottom: 20px; display: flex; justify-content: center; gap: 5px; flex-wrap: wrap;"></div>
-        <div id="sentence-options" class="letter-container"></div>
+        <h3>Put the words in order!</h3>
+        <div id="l4-emoji" class="emoji-large"></div>
+        <div id="l4-display" style="border-bottom: 3px dashed var(--primary); min-height: 60px; margin: 20px; font-size: 1.5rem; display: flex; justify-content: center; gap: 10px;"></div>
+        <div id="l4-options" class="tile-box"></div>
+        <button class="btn" style="background:var(--success)" onclick="checkL4()">Check Answer ✅</button>
+        <button class="btn" style="background:var(--danger)" onclick="resetL4()">Reset 🔄</button>
     </div>
 
-    <div id="screen-score" class="screen">
-        <h1>Finished! 🎉</h1>
-        <h2 id="final-msg">Great Job!</h2>
-        <table id="leaderboard">
-            <thead><tr><th>Rank</th><th>Name</th><th>Score</th></tr></thead>
-            <tbody id="leaderboard-body"></tbody>
-        </table>
-        <button class="btn" onclick="location.reload()">Play Again 🔄</button>
+    <div id="screen-final" class="screen">
+        <h1>Amazing Job! 🎉</h1>
+        <div id="final-stats" style="font-size: 2rem; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px #ddd;"></div>
+        <button class="btn" onclick="location.reload()">Play Again 🚀</button>
     </div>
 </div>
 
 <script>
-    // --- DATA ---
-    const vocabulary = [
-        { word: 'pen', emoji: '🖊️' },
-        { word: 'pencil', emoji: '✏️' },
-        { word: 'desk', emoji: '🖥️' },
-        { word: 'chair', emoji: '🪑' },
-        { word: 'bag', emoji: '🎒' },
-        { word: 'shoes', emoji: '👟' },
-        { word: 'book', emoji: '📖' },
-        { word: 'ruler', emoji: '📏' },
-        { word: 'rubber', emoji: '🧼' }
+    const vocab = [
+        {w: 'pen', e: '🖊️'}, {w: 'pencil', e: '✏️'}, {w: 'desk', e: '🖥️'},
+        {w: 'chair', e: '🪑'}, {w: 'bag', e: '🎒'}, {w: 'shoes', e: '👟'},
+        {w: 'book', e: '📖'}, {w: 'ruler', e: '📏'}, {w: 'rubber', e: '🧼'},
+        {w: 'notebook', e: '📓'}
     ];
 
-    let playerName = "";
-    let score = 0;
-    let currentL1Index = 0;
-    let currentL2Index = 0;
-    let currentL4Index = 0;
-    let spellingGuess = "";
+    let currentLevel = 1;
+    let questionIndex = 0;
+    let totalScore = 0;
+    let l1Active = false;
+    let l1Lock = false; // Prevent double trigger
 
-    // --- AUDIO SIMULATION ---
-    function playSound(type) {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        if (type === 'correct') {
-            osc.frequency.setValueAtTime(440, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
-            gain.gain.fadeOut = 0.2;
-            createConfetti();
-        } else {
-            osc.frequency.setValueAtTime(150, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.3);
-        }
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-    }
-
-    // --- SCREEN NAVIGATION ---
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-
-    function startGame() {
-        playerName = document.getElementById('player-name').value || "Student";
-        showScreen('screen-l1');
-        initL1();
-    }
-
-    // --- LEVEL 1: TILT ---
-    function initL1() {
-        const item = vocabulary[currentL1Index];
-        const isMatch = Math.random() > 0.5;
-        const displayWord = isMatch ? item.word : vocabulary[(currentL1Index + 1) % vocabulary.length].word;
+    // --- LEVEL 1 LOGIC (CAMERA) ---
+    async function initCamera() {
+        const video = document.getElementById('video');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
         
-        document.getElementById('l1-emoji').innerText = item.emoji;
-        document.getElementById('l1-word').innerText = `Is this a ${displayWord.toUpperCase()}?`;
-        document.getElementById('l1-word').dataset.answer = isMatch;
+        // Simple Motion/Position Detection Logic
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 320; canvas.height = 240;
+
+        setInterval(() => {
+            if (!l1Active || l1Lock) return;
+            ctx.drawImage(video, 0, 0, 320, 240);
+            const frame = ctx.getImageData(0, 0, 320, 240);
+            let leftBrightness = 0, rightBrightness = 0;
+
+            // Simple check: looking for "movement/mass" in zones
+            for (let i = 0; i < frame.data.length / 2; i += 4) leftBrightness += frame.data[i];
+            for (let i = frame.data.length / 2; i < frame.data.length; i += 4) rightBrightness += frame.data[i];
+
+            // Trigger based on which side of the screen is "darker" (simulating a head presence)
+            if (leftBrightness > rightBrightness + 100000) handleL1Input(true);
+            else if (rightBrightness > leftBrightness + 100000) handleL1Input(false);
+        }, 500);
     }
 
-    function checkL1(userResponse) {
-        const correct = (userResponse.toString() === document.getElementById('l1-word').dataset.answer);
-        if (correct) {
-            score += 10;
-            playSound('correct');
-            showScreen('screen-l2');
-            initL2();
-        } else {
-            playSound('wrong');
-            alert("Try again! 🤗");
-        }
+    function handleL1Input(isLeft) {
+        l1Lock = true;
+        const correct = document.getElementById('l1-question').dataset.ans === "true";
+        if (isLeft === correct) addScore(10, "Yes, it is!");
+        else addScore(0, "No, it isn't.");
+        
+        setTimeout(() => {
+            l1Lock = false;
+            nextQuestion();
+        }, 1500);
     }
 
-    // Gyroscope Logic
-    window.addEventListener('deviceorientation', (event) => {
-        if (document.getElementById('screen-l1').classList.contains('active')) {
-            if (event.gamma < -20) checkL1(true); // Tilt Left
-            if (event.gamma > 20) checkL1(false); // Tilt Right
-        }
-    });
+    function initL1() {
+        l1Active = true;
+        const item = vocab[questionIndex];
+        const isMatch = Math.random() > 0.5;
+        document.getElementById('l1-emoji').innerText = item.e;
+        document.getElementById('l1-question').innerText = `Is it a ${isMatch ? item.w : 'dog'}?`;
+        document.getElementById('l1-question').dataset.ans = isMatch;
+    }
 
     // --- LEVEL 2: SPELLING ---
+    let l2Guess = "";
     function initL2() {
-        const item = vocabulary[4]; // Bag
-        document.getElementById('l2-emoji').innerText = item.emoji;
-        const letters = item.word.split('').sort(() => Math.random() - 0.5);
-        const container = document.getElementById('l2-letters');
-        container.innerHTML = '';
-        spellingGuess = "";
-        document.getElementById('spelling-answer').innerText = "_ _ _";
-
-        letters.forEach(char => {
-            const tile = document.createElement('div');
-            tile.className = 'letter-tile';
-            tile.innerText = char.toUpperCase();
-            tile.onclick = () => {
-                tile.classList.add('used');
-                spellingGuess += char;
-                document.getElementById('spelling-answer').innerText = spellingGuess.toUpperCase();
-                if (spellingGuess.length === item.word.length) {
-                    if (spellingGuess === item.word) {
-                        score += 20;
-                        playSound('correct');
-                        setTimeout(() => { showScreen('screen-l3'); initL3(); }, 1000);
-                    } else {
-                        playSound('wrong');
-                        resetSpelling();
-                    }
+        const item = vocab[questionIndex];
+        document.getElementById('l2-emoji').innerText = item.e;
+        l2Guess = "";
+        document.getElementById('l2-display').innerText = "_ ".repeat(item.w.length);
+        const chars = (item.w + "xyz").split("").sort(() => Math.random() - 0.5);
+        const opt = document.getElementById('l2-options');
+        opt.innerHTML = "";
+        chars.forEach(c => {
+            const t = document.createElement('div');
+            t.className = 'tile'; t.innerText = c.toUpperCase();
+            t.onclick = () => {
+                if (t.classList.contains('selected')) return;
+                t.classList.add('selected');
+                l2Guess += c;
+                document.getElementById('l2-display').innerText = l2Guess.toUpperCase();
+                if (l2Guess.length === item.w.length) {
+                    if (l2Guess === item.w) { addScore(10, "Great!"); nextQuestion(); }
+                    else { resetL2(); }
                 }
             };
-            container.appendChild(tile);
+            opt.appendChild(t);
         });
     }
-
-    function resetSpelling() {
-        spellingGuess = "";
-        document.getElementById('spelling-answer').innerText = "";
-        document.querySelectorAll('.letter-tile').forEach(t => t.classList.remove('used'));
-    }
+    function resetL2() { l2Guess = ""; document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected')); document.getElementById('l2-display').innerText = ""; }
 
     // --- LEVEL 3: VOICE ---
     function initL3() {
-        const item = vocabulary[5]; // Shoes
-        document.getElementById('l3-emoji').innerText = item.emoji;
-        document.getElementById('l3-target').innerText = item.word.toUpperCase();
+        const item = vocab[questionIndex];
+        document.getElementById('l3-emoji').innerText = item.e;
+        document.getElementById('speech-feedback').innerText = `Say: "It is a ${item.w}"`;
     }
-
-    function startVoice() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'en-US';
-        const mic = document.getElementById('mic-btn');
-        mic.classList.add('recording');
-        
-        recognition.start();
-
-        recognition.onresult = (event) => {
-            const speech = event.results[0][0].transcript.toLowerCase();
-            mic.classList.remove('recording');
-            if (speech.includes(vocabulary[5].word)) {
-                score += 20;
-                playSound('correct');
-                showScreen('screen-l4');
-                initL4();
+    function startSpeech() {
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        rec.lang = 'en-US';
+        document.getElementById('mic-btn').style.background = 'red';
+        rec.start();
+        rec.onresult = (e) => {
+            const transcript = e.results[0][0].transcript.toLowerCase();
+            const target = `it is a ${vocab[questionIndex].w}`;
+            if (transcript.includes(target) || transcript.includes(vocab[questionIndex].w)) {
+                addScore(10, "Perfect!"); nextQuestion();
             } else {
-                document.getElementById('voice-msg').innerText = `You said "${speech}". Try again!`;
-                playSound('wrong');
+                document.getElementById('speech-feedback').innerText = "Try again! Say: It is a...";
             }
+            document.getElementById('mic-btn').style.background = 'var(--primary)';
         };
-        recognition.onerror = () => mic.classList.remove('recording');
     }
 
-    // --- LEVEL 4: SENTENCE ---
+    // --- LEVEL 4: SENTENCE BUILDER ---
+    let l4Current = [];
     function initL4() {
-        const item = vocabulary[3]; // Chair
-        document.getElementById('l4-emoji').innerText = item.emoji;
-        const sentence = ["It", "is", "a", "chair"];
-        const shuffled = [...sentence].sort(() => Math.random() - 0.5);
-        const targetDiv = document.getElementById('sentence-target');
-        const optionsDiv = document.getElementById('sentence-options');
-        targetDiv.innerHTML = "";
-        optionsDiv.innerHTML = "";
-
-        shuffled.forEach(word => {
-            const btn = document.createElement('button');
-            btn.className = 'btn';
-            btn.style.fontSize = '1rem';
-            btn.innerText = word;
-            btn.onclick = () => {
-                const span = document.createElement('span');
-                span.innerText = word + " ";
-                span.style.fontSize = '1.5rem';
-                targetDiv.appendChild(span);
-                btn.style.display = 'none';
-                
-                if (targetDiv.innerText.trim().toLowerCase() === "it is a chair") {
-                    score += 50;
-                    playSound('correct');
-                    setTimeout(endGame, 1000);
-                }
+        const item = vocab[questionIndex];
+        const sentence = ["It", "is", "a", item.w];
+        l4Current = [];
+        document.getElementById('l4-emoji').innerText = item.e;
+        document.getElementById('l4-display').innerHTML = "";
+        const opt = document.getElementById('l4-options');
+        opt.innerHTML = "";
+        [...sentence].sort(() => Math.random() - 0.5).forEach(w => {
+            const t = document.createElement('div');
+            t.className = 'tile'; t.innerText = w;
+            t.onclick = () => {
+                if (t.classList.contains('selected')) return;
+                t.classList.add('selected');
+                l4Current.push(w);
+                const span = document.createElement('span'); span.innerText = w;
+                document.getElementById('l4-display').appendChild(span);
             };
-            optionsDiv.appendChild(btn);
+            opt.appendChild(t);
         });
     }
+    function checkL4() {
+        const correct = `Itisa${vocab[questionIndex].w}`.toLowerCase();
+        const user = l4Current.join("").toLowerCase();
+        if (user === correct) { addScore(10, "Correct!"); nextQuestion(); }
+        else { alert("Wrong order! Resetting..."); resetL4(); }
+    }
+    function resetL4() { l4Current = []; document.getElementById('l4-display').innerHTML = ""; document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected')); }
 
-    // --- SCOREBOARD ---
-    function endGame() {
-        showScreen('screen-score');
-        const history = JSON.parse(localStorage.getItem('english_scores') || '[]');
-        history.push({ name: playerName, score: score });
-        history.sort((a, b) => b.score - a.score);
-        localStorage.setItem('english_scores', JSON.stringify(history.slice(0, 5)));
-
-        const tbody = document.getElementById('leaderboard-body');
-        tbody.innerHTML = history.slice(0, 5).map((entry, i) => `
-            <tr class="${i === 0 ? 'top-score' : ''}">
-                <td>${i === 0 ? '🥇' : i + 1}</td>
-                <td>${entry.name}</td>
-                <td>${entry.score} ⭐</td>
-            </tr>
-        `).join('');
+    // --- CORE ENGINE ---
+    function addScore(pts, msg) {
+        totalScore += pts;
+        document.getElementById('current-score').innerText = totalScore;
+        const pop = document.createElement('div');
+        pop.className = 'score-pop';
+        pop.innerText = msg + " +" + pts;
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 1000);
     }
 
-    // --- EFFECTS ---
-    function createConfetti() {
-        for (let i = 0; i < 20; i++) {
-            const conf = document.createElement('div');
-            conf.className = 'confetti';
-            conf.style.left = Math.random() * 100 + 'vw';
-            conf.style.backgroundColor = ['#ff0','#f0f','#0ff'][Math.floor(Math.random()*3)];
-            conf.style.top = '-10px';
-            document.body.appendChild(conf);
-            
-            const animation = conf.animate([
-                { transform: 'translateY(0) rotate(0)' },
-                { transform: `translateY(100vh) rotate(${Math.random() * 360}deg)` }
-            ], { duration: 2000 });
-            animation.onfinish = () => conf.remove();
+    function nextQuestion() {
+        questionIndex++;
+        if (questionIndex >= 10) {
+            currentLevel++;
+            questionIndex = 0;
+            if (currentLevel > 4) return finishGame();
+            startLevel(currentLevel);
+        } else {
+            document.getElementById('q-count').innerText = questionIndex + 1;
+            document.getElementById('inner-progress').style.width = ((questionIndex + 1) * 10) + "%";
+            loadQuestion();
         }
     }
-</script>
 
+    function startLevel(lvl) {
+        currentLevel = lvl;
+        questionIndex = 0;
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-l${lvl}`).classList.add('active');
+        if (lvl === 1) initCamera();
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (currentLevel === 1) initL1();
+        else if (currentLevel === 2) initL2();
+        else if (currentLevel === 3) initL3();
+        else if (currentLevel === 4) initL4();
+    }
+
+    function finishGame() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-final').classList.add('active');
+        const name = document.getElementById('p-name').value || "Player";
+        document.getElementById('final-stats').innerHTML = `
+            ${name}'s Report Card Card<br>
+            ⭐ Total Score: ${totalScore} / 400<br>
+            🏆 Status: English Superstar!
+        `;
+    }
+</script>
 </body>
 </html>
